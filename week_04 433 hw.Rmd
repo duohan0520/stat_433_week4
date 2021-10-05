@@ -1,0 +1,62 @@
+---
+title: "week_04"
+author: "Duohan Zhang"
+date: "10/4/2021"
+output: github_document
+---
+
+
+## Intro:
+In this file, we use three different methods to reach different conclusions on what time of day is most suitable for avoiding delayed flights based on three different patterns. The first one is from data "weather" in which weather info for every hour of every day is recorded. The second one is from data "flights" from which we directly subtract arriving delayed info. The third one is from both data "flights" and data "planes". We combine two datasets by using function left_join so every flights has the plane info.
+
+```{r}
+library(dplyr)
+library(nycflights13)
+library(ggplot2)
+```
+
+```{r}
+distinct(flights["hour"])
+```
+
+From above: We see that there are no flights in 0,2,3,4 hour in a day.
+
+1st pattern:weather
+I think visibility determines whether a flight will be cancelled or not. If visibility of time A
+is longer than visibility in time B, we think flights in time A are less likely to be delayed. 
+
+```{r}
+weather %>%
+  group_by(hour) %>%
+  summarise(visib_mean = mean(visib,na.rm = TRUE)) %>%
+  arrange(desc(visib_mean))
+```
+
+From the result above, we see that 18th hour in a day is the best to have a flight since it has the best visibility averagely.
+
+
+2nd pattern:
+directly calculate delaying proportion in flights. We think delaying no more than 10 mins is regarded as a good flight.
+
+```{r}
+flights %>%
+  group_by(hour) %>%
+  summarise(prop_of_good_flight = sum(arr_delay < 10,na.rm = TRUE)/n()) %>%
+  arrange(desc(prop_of_good_flight))
+```
+
+From the result above, we see that in 2013 New York City, the best flight time is 5th hour in a day.
+
+
+3rd pattern:
+combine flights and planes so that each flight has a manufacuring year for its plane. We tend to think a flight is less likely to be delayed if the plane has the nearest manufacuring year. For example, if time A has larger manufacturing year than that of time B, we tend to choose time A.
+
+```{r}
+flights %>%
+  left_join(planes, by = "tailnum") %>%
+  group_by(hour) %>%
+  summarise(manu_year_ave = mean(year.y,na.rm = TRUE)) %>%
+  arrange(desc(manu_year_ave))
+```
+
+From the result above, we see that averagely speaking, the planes in 22th hour have the largest manufacturing year. So we tend to think it is the best.
